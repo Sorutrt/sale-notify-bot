@@ -4,8 +4,11 @@ import { parseYodobashiPrice } from "./yodobashi";
 export type FetchPriceOptions = {
   fetch?: typeof fetch;
   headers?: HeadersInit;
+  timeoutMs?: number;
   userAgent?: string;
 };
+
+const defaultFetchTimeoutMs = 15_000;
 
 const YODOBASHI_HOSTS = new Set(["www.yodobashi.com", "yodobashi.com"]);
 
@@ -32,23 +35,46 @@ export async function fetchPrice(
   const parser = getSupportedParser(parsedUrl);
   const fetchImpl = options.fetch ?? fetch;
   const headers = new Headers(options.headers);
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    options.timeoutMs ?? defaultFetchTimeoutMs,
+  );
 
   if (options.userAgent && !headers.has("user-agent")) {
     headers.set("user-agent", options.userAgent);
   }
 
-  const response = await fetchImpl(parsedUrl, { headers });
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch price from ${parsedUrl.hostname}: HTTP ${response.status}`,
-    );
-  }
+  try {
+    const response = await fetchImpl(parsedUrl, {
+      headers,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch price from ${parsedUrl.hostname}: HTTP ${response.status}`,
+      );
+    }
 
-  return {
-    price: parser(await response.text()),
-    currency: "JPY",
-    source: parsedUrl.hostname,
-  };
+    return {
+      price: parser(await response.text()),
+      currency: "JPY",
+      source: parsedUrl.hostname,
+    };
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(
+        `Timed out fetching price from ${parsedUrl.hostname} after ${
+          options.timeoutMs ?? defaultFetchTimeoutMs
+        }ms`,
+        { cause: error },
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export { parseYodobashiPrice };

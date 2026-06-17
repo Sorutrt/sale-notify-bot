@@ -128,6 +128,10 @@ async function handleRegisterCommand(
   interaction: ChatInputCommandInteraction,
   deps: InteractionHandlerDependencies,
 ): Promise<void> {
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply();
+  }
+
   const url = interaction.options.getString("url", true);
   const name = interaction.options.getString("name", true).trim();
   const thresholdPercent =
@@ -232,7 +236,10 @@ async function registerProductFromInput(input: {
     return "URLは `http://` または `https://` で始まる形式で指定してください。";
   }
 
-  const price = await input.deps.pricing.fetchPrice(input.url);
+  const price = await input.deps.pricing.fetchPrice(input.url).catch((error) => {
+    input.deps.logger?.error("Price fetch failed during registration", error);
+    return null;
+  });
   if (!price) {
     return `価格を取得できなかったため登録できませんでした。\n${input.url}`;
   }
@@ -314,6 +321,11 @@ async function reply(
   ephemeral = false,
 ): Promise<void> {
   if (interaction.deferred || interaction.replied) {
+    if (interaction.deferred && !interaction.replied) {
+      await interaction.editReply({ content });
+      return;
+    }
+
     await interaction.followUp({ content, ephemeral });
     return;
   }
