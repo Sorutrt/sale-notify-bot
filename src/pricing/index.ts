@@ -1,5 +1,9 @@
 import type { PriceFetchResult } from "../types";
-import { parseYodobashiPrice } from "./yodobashi";
+import {
+  buildSteamPriceApiUrl,
+  extractSteamAppId,
+  parseSteamPrice,
+} from "./steam";
 
 export type FetchPriceOptions = {
   fetch?: typeof fetch;
@@ -10,18 +14,20 @@ export type FetchPriceOptions = {
 
 const defaultFetchTimeoutMs = 15_000;
 
-const YODOBASHI_HOSTS = new Set(["www.yodobashi.com", "yodobashi.com"]);
+type PriceSource = {
+  requestUrl: URL;
+  parse(body: string): number;
+  source: string;
+};
 
-function isYodobashiHost(hostname: string): boolean {
-  const normalized = hostname.toLowerCase();
-  return (
-    YODOBASHI_HOSTS.has(normalized) || normalized.endsWith(".yodobashi.com")
-  );
-}
-
-function getSupportedParser(url: URL): (html: string) => number {
-  if (isYodobashiHost(url.hostname)) {
-    return parseYodobashiPrice;
+function getSupportedSource(url: URL): PriceSource {
+  const steamAppId = extractSteamAppId(url);
+  if (steamAppId) {
+    return {
+      requestUrl: buildSteamPriceApiUrl(steamAppId),
+      parse: (body) => parseSteamPrice(steamAppId, body),
+      source: url.hostname,
+    };
   }
 
   throw new Error(`Unsupported price source host: ${url.hostname}`);
@@ -32,7 +38,7 @@ export async function fetchPrice(
   options: FetchPriceOptions = {},
 ): Promise<PriceFetchResult> {
   const parsedUrl = new URL(url);
-  const parser = getSupportedParser(parsedUrl);
+  const source = getSupportedSource(parsedUrl);
   const fetchImpl = options.fetch ?? fetch;
   const headers = new Headers(options.headers);
   const controller = new AbortController();
@@ -46,7 +52,7 @@ export async function fetchPrice(
   }
 
   try {
-    const response = await fetchImpl(parsedUrl, {
+    const response = await fetchImpl(source.requestUrl, {
       headers,
       signal: controller.signal,
     });
@@ -57,9 +63,9 @@ export async function fetchPrice(
     }
 
     return {
-      price: parser(await response.text()),
+      price: source.parse(await response.text()),
       currency: "JPY",
-      source: parsedUrl.hostname,
+      source: source.source,
     };
   } catch (error) {
     if (controller.signal.aborted) {
@@ -77,4 +83,4 @@ export async function fetchPrice(
   }
 }
 
-export { parseYodobashiPrice };
+export { buildSteamPriceApiUrl, extractSteamAppId, parseSteamPrice };

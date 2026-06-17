@@ -1,6 +1,6 @@
 # sale-notify-bot
 
-Discord に投稿された商品 URL と商品名を登録し、基準価格から指定割合以上値下がりしたときに通知する bot です。MVP ではヨドバシカメラの商品ページを対象にします。
+Discord に投稿された商品 URL と商品名を登録し、基準価格から指定割合以上値下がりしたときに通知する bot です。MVP では Steam Store のアプリページを対象にします。
 
 ## Discord Developer Portal の準備
 
@@ -43,7 +43,7 @@ flake を Git に追加した後は `nix develop` も使えます。未追跡の
 - `DISCORD_NOTIFY_CHANNEL_ID`: 値下げ通知を投稿するチャンネル ID
 - `DATABASE_PATH`: SQLite DB の保存先。既定値は `./sale-notify.db`
 - `PRICE_CHECK_CRON`: 価格チェック周期。既定値は `*/10 * * * *`
-- `USER_AGENT`: 商品ページ取得時の User-Agent
+- `USER_AGENT`: 価格 API 取得時の User-Agent
 
 ## コマンド
 
@@ -56,6 +56,12 @@ flake を Git に追加した後は `nix develop` も使えます。未追跡の
 - `/help`
 
 通常メッセージで `<URL> <商品名>` または `<商品名> <URL>` と投稿する登録互換もあります。
+
+対応 URL は Steam Store のアプリページです。
+
+```text
+https://store.steampowered.com/app/570/Dota_2/
+```
 
 ## 参考
 

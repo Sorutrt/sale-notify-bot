@@ -55,7 +55,7 @@ function createRegisterInteraction(input: {
 describe("handleChatInputCommand", () => {
   test("defers register commands before fetching the price", async () => {
     const interaction = createRegisterInteraction({
-      url: "https://www.yodobashi.com/product/100000001008988438/",
+      url: "https://store.steampowered.com/app/570/Dota_2/",
       name: "テスト商品",
     });
 
@@ -81,7 +81,11 @@ describe("handleChatInputCommand", () => {
       pricing: {
         async fetchPrice() {
           expect(interaction.calls).toEqual(["deferReply"]);
-          return { price: 12_345, currency: "JPY", source: "www.yodobashi.com" };
+          return {
+            price: 12_345,
+            currency: "JPY",
+            source: "store.steampowered.com",
+          };
         },
       },
     });
@@ -92,7 +96,7 @@ describe("handleChatInputCommand", () => {
 
   test("returns a registration failure message when price fetch fails", async () => {
     const interaction = createRegisterInteraction({
-      url: "https://www.yodobashi.com/product/100000001008988438/",
+      url: "https://store.steampowered.com/app/570/Dota_2/",
       name: "テスト商品",
     });
     const errors: unknown[] = [];
@@ -132,7 +136,7 @@ describe("handleChatInputCommand", () => {
 
     expect(interaction.calls).toEqual(["deferReply", "editReply"]);
     expect(interaction.replies[0]).toBe(
-      "価格を取得できなかったため登録できませんでした。\nhttps://www.yodobashi.com/product/100000001008988438/",
+      "価格を取得できなかったため登録できませんでした。\nhttps://store.steampowered.com/app/570/Dota_2/",
     );
     expect(errors).toHaveLength(1);
   });
