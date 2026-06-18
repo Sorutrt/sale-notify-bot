@@ -31,7 +31,24 @@ describe("parseSteamPrice", () => {
           is_free: false,
           price_overview: {
             currency: "JPY",
-            final: 1234,
+            final: 123400,
+          },
+        },
+      },
+    });
+
+    expect(parseSteamPrice("570", body)).toBe(1234);
+  });
+
+  test("converts Steam JPY final prices from hundredths of yen", () => {
+    const body = JSON.stringify({
+      "570": {
+        success: true,
+        data: {
+          is_free: false,
+          price_overview: {
+            currency: "JPY",
+            final: 123400,
           },
         },
       },
@@ -66,7 +83,7 @@ describe("fetchPrice", () => {
             data: {
               price_overview: {
                 currency: "JPY",
-                final: 9876,
+                final: 987600,
               },
             },
           },

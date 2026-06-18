@@ -46,7 +46,7 @@ export function parseSteamPrice(appId: string, body: string): number {
 
   const price = priceOverview.final;
   if (typeof price === "number" && Number.isFinite(price) && price >= 0) {
-    return Math.trunc(price);
+    return Math.trunc(price / 100);
   }
 
   throw new Error(`Unable to parse Steam price for app ${appId}`);
