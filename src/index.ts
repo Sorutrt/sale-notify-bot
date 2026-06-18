@@ -1,4 +1,5 @@
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import type { InteractionReplyOptions } from "discord.js";
+import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
 import cron from "node-cron";
 import { loadConfig } from "./config";
 import { createDatabase } from "./db";
@@ -62,10 +63,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     const message = "処理中にエラーが発生しました。ログを確認してください。";
+    const response: InteractionReplyOptions = {
+      content: message,
+      flags: MessageFlags.Ephemeral,
+    };
     if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({ content: message, ephemeral: true });
+      await interaction.followUp(response);
     } else {
-      await interaction.reply({ content: message, ephemeral: true });
+      await interaction.reply(response);
     }
   }
 });

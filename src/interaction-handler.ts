@@ -2,8 +2,10 @@ import type {
   AutocompleteInteraction,
   ChatInputCommandInteraction,
   Interaction,
+  InteractionReplyOptions,
   Message,
 } from "discord.js";
+import { MessageFlags } from "discord.js";
 import { commandNames } from "./commands";
 import { parseRegistrationMessage } from "./message-registration";
 import type {
@@ -402,17 +404,21 @@ async function reply(
   content: string,
   ephemeral = false,
 ): Promise<void> {
+  const options: InteractionReplyOptions = ephemeral
+    ? { content, flags: MessageFlags.Ephemeral }
+    : { content };
+
   if (interaction.deferred || interaction.replied) {
     if (interaction.deferred && !interaction.replied) {
       await interaction.editReply({ content });
       return;
     }
 
-    await interaction.followUp({ content, ephemeral });
+    await interaction.followUp(options);
     return;
   }
 
-  await interaction.reply({ content, ephemeral });
+  await interaction.reply(options);
 }
 
 function isHttpUrl(value: string): boolean {
