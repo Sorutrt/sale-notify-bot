@@ -27,6 +27,7 @@ export type SaleNotifyRepository = {
   listProducts(): Promise<ProductSummary[]>;
   listProductUrls(name: string): Promise<Array<ProductUrl | ProductUrlWithProduct>>;
   deleteProductUrl(input: { name: string; url: string }): Promise<boolean>;
+  deleteProductUrlsByName(name: string): Promise<number>;
   setBasePrice(input: {
     name: string;
     url: string;
@@ -170,7 +171,20 @@ async function handleDeleteCommand(
   deps: InteractionHandlerDependencies,
 ): Promise<void> {
   const name = interaction.options.getString("name", true).trim();
-  const url = interaction.options.getString("url", true);
+  const url = interaction.options.getString("url", true).trim();
+
+  if (url === "all") {
+    const deletedCount = await deps.repository.deleteProductUrlsByName(name);
+    await reply(
+      interaction,
+      deletedCount > 0
+        ? `削除しました: ${name}\n${deletedCount}件`
+        : `対象の登録が見つかりませんでした: ${name}`,
+      deletedCount === 0,
+    );
+    return;
+  }
+
   const deleted = await deps.repository.deleteProductUrl({ name, url });
 
   await reply(
@@ -308,7 +322,7 @@ function formatHelp(): string {
     "- `/register url:<URL> name:<商品名> threshold:<割引率>`: 商品URLを登録します。",
     "- `/list`: 登録済みの商品一覧を表示します。",
     "- `/list name:<商品名>`: 商品に紐づくURLを表示します。",
-    "- `/delete name:<商品名> url:<URL>`: 登録URLを削除します。",
+    "- `/delete name:<商品名> url:<URL|all>`: 登録URLを削除します。`all` で商品ごと削除します。",
     "- `/set-base name:<商品名> url:<URL> price:<円>`: 基準価格を変更します。",
     "- `/set-threshold name:<商品名> url:<URL> percent:<割引率>`: 通知しきい値を変更します。",
     "通常メッセージでも `<URL> <商品名>` または `<商品名> <URL>` 形式なら登録できます。",

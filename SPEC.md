@@ -229,7 +229,7 @@ const job = nodeCron.schedule('*/10 * * * *', async () => {
 | `/register` | 商品の登録。URL・商品名・しきい値を受け付け、同じ商品名に複数の URL を紐付けられます。| `url` (必須): 監視する商品の URL / `name` (必須): 商品名 / `threshold` (任意): 割引率 (%) |
 | `/list` | 登録済み商品の一覧を返します。各行に商品名・登録 URL 数・代表的な基準価格を表示します。| なし |
 | `/list <name>` | 指定した商品名に紐づく URL の一覧を返します。各 URL ごとに基準価格・現在価格・しきい値を表示します。| `name` (必須) |
-| `/delete <name> <url>` | 指定した商品名に対する URL の登録を削除します。| `name` (必須), `url` (必須) |
+| `/delete <name> <url>` | 指定した商品名に対する URL の登録を削除します。`url` に `all` を指定すると商品に紐づく登録をすべて削除します。| `name` (必須), `url` (必須) |
 | `/set-base <name> <url> <price>` | 指定した URL の基準価格を手動で設定し直します。| `price` (必須): 円単位 |
 | `/set-threshold <name> <url> <percent>` | 指定した URL のしきい値 (%) を変更します。| `percent` (必須) |
 | `/help` | 使用可能なコマンドの説明を返す。| なし |

@@ -52,6 +52,34 @@ function createRegisterInteraction(input: {
   };
 }
 
+function createDeleteInteraction(input: {
+  name: string;
+  url: string;
+}): ChatInputCommandInteraction & {
+  replies: string[];
+} {
+  const replies: string[] = [];
+  const interaction = {
+    commandName: "delete",
+    deferred: false,
+    replied: false,
+    replies,
+    options: {
+      getString(name: string) {
+        return name === "url" ? input.url : input.name;
+      },
+    },
+    async reply({ content }: { content: string }) {
+      replies.push(content);
+      interaction.replied = true;
+    },
+  };
+
+  return interaction as unknown as ChatInputCommandInteraction & {
+    replies: string[];
+  };
+}
+
 describe("handleChatInputCommand", () => {
   test("defers register commands before fetching the price", async () => {
     const interaction = createRegisterInteraction({
@@ -70,6 +98,9 @@ describe("handleChatInputCommand", () => {
         },
         async deleteProductUrl() {
           return false;
+        },
+        async deleteProductUrlsByName() {
+          return 0;
         },
         async setBasePrice() {
           return null;
@@ -115,6 +146,9 @@ describe("handleChatInputCommand", () => {
         async deleteProductUrl() {
           return false;
         },
+        async deleteProductUrlsByName() {
+          return 0;
+        },
         async setBasePrice() {
           return null;
         },
@@ -139,5 +173,46 @@ describe("handleChatInputCommand", () => {
       "価格を取得できなかったため登録できませんでした。\nhttps://store.steampowered.com/app/570/Dota_2/",
     );
     expect(errors).toHaveLength(1);
+  });
+
+  test("deletes all URLs for a product when delete url is all", async () => {
+    const interaction = createDeleteInteraction({
+      name: "Keyboard",
+      url: "all",
+    });
+    const deletedNames: string[] = [];
+
+    await handleChatInputCommand(interaction, {
+      repository: {
+        async registerProduct() {},
+        async listProducts() {
+          return [];
+        },
+        async listProductUrls() {
+          return [];
+        },
+        async deleteProductUrl() {
+          throw new Error("should delete by product name");
+        },
+        async deleteProductUrlsByName(name: string) {
+          deletedNames.push(name);
+          return 2;
+        },
+        async setBasePrice() {
+          return null;
+        },
+        async setThresholdPercent() {
+          return null;
+        },
+      },
+      pricing: {
+        async fetchPrice() {
+          return null;
+        },
+      },
+    });
+
+    expect(deletedNames).toEqual(["Keyboard"]);
+    expect(interaction.replies[0]).toBe("削除しました: Keyboard\n2件");
   });
 });

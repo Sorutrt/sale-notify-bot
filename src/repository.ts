@@ -232,6 +232,27 @@ export function deleteProductUrl(db: Database, name: string, url: string): boole
   })();
 }
 
+export function deleteProductUrlsByName(db: Database, name: string): number {
+  return db.transaction(() => {
+    const product = db
+      .query<{ id: number }, { $name: string }>("SELECT id FROM products WHERE name = $name")
+      .get({ $name: name });
+    if (!product) {
+      return 0;
+    }
+
+    const result = db
+      .query("DELETE FROM product_urls WHERE product_id = $productId")
+      .run({ $productId: product.id });
+
+    db.query("DELETE FROM products WHERE id = $productId").run({
+      $productId: product.id,
+    });
+
+    return result.changes;
+  })();
+}
+
 export function listEnabledProductUrls(db: Database): ProductUrlWithProduct[] {
   const rows = db
     .query<ProductUrlWithProductRow, null>(`
@@ -341,6 +362,10 @@ export class ProductRepository {
     }
 
     return deleteProductUrl(this.db, nameOrInput.name, nameOrInput.url);
+  }
+
+  async deleteProductUrlsByName(name: string): Promise<number> {
+    return deleteProductUrlsByName(this.db, name);
   }
 
   listEnabledProductUrls(): ProductUrlWithProduct[] {

@@ -3,6 +3,7 @@ import { Database } from "bun:sqlite";
 import { initDb } from "../src/db";
 import {
   ProductRepository,
+  deleteProductUrlsByName,
   deleteProductUrl,
   findProductUrlByNameAndUrl,
   listEnabledProductUrls,
@@ -136,6 +137,29 @@ describe("repository", () => {
     expect(deleteProductUrl(db, "Keyboard", "https://shop-b.example/keyboard")).toBe(true);
     expect(listProductSummaries(db)).toEqual([]);
     expect(deleteProductUrl(db, "Keyboard", "https://shop-b.example/keyboard")).toBe(false);
+  });
+
+  test("deletes all product URLs by product name", () => {
+    upsertProductUrl(db, {
+      name: "Keyboard",
+      url: "https://shop-a.example/keyboard",
+      basePrice: 12000,
+    });
+    upsertProductUrl(db, {
+      name: "Keyboard",
+      url: "https://shop-b.example/keyboard",
+      basePrice: 10000,
+    });
+    upsertProductUrl(db, {
+      name: "Mouse",
+      url: "https://shop.example/mouse",
+      basePrice: 5000,
+    });
+
+    expect(deleteProductUrlsByName(db, "Keyboard")).toBe(2);
+    expect(listProductUrlsByName(db, "Keyboard")).toEqual([]);
+    expect(listProductSummaries(db).map((product) => product.name)).toEqual(["Mouse"]);
+    expect(deleteProductUrlsByName(db, "Keyboard")).toBe(0);
   });
 
   test("lists enabled product URLs with product names", () => {

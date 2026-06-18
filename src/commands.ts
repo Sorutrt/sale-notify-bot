@@ -53,7 +53,10 @@ export const slashCommands = [
       option.setName("name").setDescription("商品名").setRequired(true),
     )
     .addStringOption((option) =>
-      option.setName("url").setDescription("削除するURL").setRequired(true),
+      option
+        .setName("url")
+        .setDescription("削除するURL。allで商品ごと削除")
+        .setRequired(true),
     ),
 
   new SlashCommandBuilder()

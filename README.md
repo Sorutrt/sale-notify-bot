@@ -51,6 +51,7 @@ flake を Git に追加した後は `nix develop` も使えます。未追跡の
 - `/list`
 - `/list name`
 - `/delete name url`
+- `/delete name all`
 - `/set-base name url price`
 - `/set-threshold name url percent`
 - `/help`
