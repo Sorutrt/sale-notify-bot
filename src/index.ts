@@ -49,7 +49,7 @@ client.once(Events.ClientReady, (readyClient) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) {
+  if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) {
     return;
   }
 
@@ -57,6 +57,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await handleInteraction(interaction);
   } catch (error) {
     console.error("Interaction handling failed", error);
+    if (interaction.isAutocomplete()) {
+      return;
+    }
+
     const message = "処理中にエラーが発生しました。ログを確認してください。";
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({ content: message, ephemeral: true });

@@ -1,4 +1,5 @@
 import type {
+  AutocompleteInteraction,
   ChatInputCommandInteraction,
   Interaction,
   Message,
@@ -55,12 +56,58 @@ export function createInteractionHandler(
   deps: InteractionHandlerDependencies,
 ): (interaction: Interaction) => Promise<void> {
   return async (interaction) => {
+    if (interaction.isAutocomplete()) {
+      await handleAutocompleteInteraction(interaction, deps);
+      return;
+    }
+
     if (!interaction.isChatInputCommand()) {
       return;
     }
 
     await handleChatInputCommand(interaction, deps);
   };
+}
+
+export async function handleAutocompleteInteraction(
+  interaction: AutocompleteInteraction,
+  deps: InteractionHandlerDependencies,
+): Promise<void> {
+  try {
+    const focused = interaction.options.getFocused(true);
+
+    if (
+      (interaction.commandName === commandNames.list ||
+        interaction.commandName === commandNames.delete) &&
+      focused.name === "name"
+    ) {
+      const products = await deps.repository.listProducts();
+      await interaction.respond(
+        toAutocompleteChoices(
+          products.map((product) => product.name),
+          String(focused.value),
+        ),
+      );
+      return;
+    }
+
+    if (interaction.commandName === commandNames.delete && focused.name === "url") {
+      const name = interaction.options.getString("name")?.trim();
+      const urls = name
+        ? (await deps.repository.listProductUrls(name)).map((entry) => entry.url)
+        : [];
+
+      await interaction.respond(
+        toAutocompleteChoices(["all", ...urls], String(focused.value)),
+      );
+      return;
+    }
+
+    await interaction.respond([]);
+  } catch (error) {
+    deps.logger?.error(error);
+    await interaction.respond([]);
+  }
 }
 
 export function createMessageRegistrationHandler(
@@ -327,6 +374,27 @@ function formatHelp(): string {
     "- `/set-threshold name:<商品名> url:<URL> percent:<割引率>`: 通知しきい値を変更します。",
     "通常メッセージでも `<URL> <商品名>` または `<商品名> <URL>` 形式なら登録できます。",
   ].join("\n");
+}
+
+function toAutocompleteChoices(values: string[], focusedValue: string) {
+  const normalizedFocusedValue = focusedValue.toLocaleLowerCase();
+  const seen = new Set<string>();
+
+  return values
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+    .filter((value) => {
+      if (seen.has(value)) {
+        return false;
+      }
+      seen.add(value);
+      return value.toLocaleLowerCase().includes(normalizedFocusedValue);
+    })
+    .slice(0, 25)
+    .map((value) => ({
+      name: value.length > 100 ? `${value.slice(0, 97)}...` : value,
+      value,
+    }));
 }
 
 async function reply(

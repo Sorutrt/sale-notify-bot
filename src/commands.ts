@@ -43,6 +43,7 @@ export const slashCommands = [
       option
         .setName("name")
         .setDescription("詳細を表示する商品名")
+        .setAutocomplete(true)
         .setRequired(false),
     ),
 
@@ -50,12 +51,17 @@ export const slashCommands = [
     .setName(commandNames.delete)
     .setDescription("指定した商品のURL登録を削除します")
     .addStringOption((option) =>
-      option.setName("name").setDescription("商品名").setRequired(true),
+      option
+        .setName("name")
+        .setDescription("商品名")
+        .setAutocomplete(true)
+        .setRequired(true),
     )
     .addStringOption((option) =>
       option
         .setName("url")
         .setDescription("削除するURL。allで商品ごと削除")
+        .setAutocomplete(true)
         .setRequired(true),
     ),
 
